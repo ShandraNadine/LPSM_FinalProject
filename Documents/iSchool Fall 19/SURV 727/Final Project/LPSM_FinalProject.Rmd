@@ -1,0 +1,140 @@
+---
+title: "LPSM_FinalProject"
+author: "Shandra Morehouse"
+date: "12/6/2019"
+output: html_document
+---
+
+```{r}
+install.packages("tidyverse")
+install.packages("ggvis")
+install.packages("shiny")
+install.packages("gapminder")
+install.packages("tidytext")
+install.packages("ggmap")
+install.packages("magrittr")
+install.packages("ggmap")
+install.packages("ggplot2")
+library(magrittr)
+library(tidyverse)
+library(ggvis)
+library(shiny)
+library(gapminder)
+library(tidytext)
+library(ggmap)
+library(ggplot2)
+```
+```{r}
+str(ManuClean)
+```
+```{r}
+#ManuClean$County
+#ManuClean$Year
+ManuClean$Owner_LastName
+```
+ 
+ Comments: We should explain why there are dates past 1865. Also is the date the date the manumission was valid? 
+
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+ggplot() +
+  geom_bar(mapping = aes(x = Year, fill = County))
+```
+
+
+```{r}
+ggplot(ManuClean) +
+  geom_bar(mapping = aes(x = Year, fill = Sex)) +
+  facet_wrap(~ County, scale = "free", ncol = 4)
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = County), binwidth = 5)
+  
+```
+```{r}
+ManuClean %>%
+  filter(County == "AA", Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = Sex), binwidth = 5)
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = Sex), binwidth = 5)
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = County), binwidth = 5)
+```
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = Year, y = County))
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = Year, y = Age))
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = Age, y = Sex))
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_tile(mapping = aes(x = Year, y = County, fill = Age), binwidth = 5) +
+   scale_fill_distiller(palette = "YlGnBu")
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700, Owner_LastName == "Holsey") %>%
+  select(County, Year, Sex, Age, Owner_LastName) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Age, fill = Sex), binwidth = 5) 
+  
+```
+
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = Age, fill = County), binwidth = 5) 
+   
+```
+```{r}
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = Age, fill = Sex), binwidth = 5) 
+```
+

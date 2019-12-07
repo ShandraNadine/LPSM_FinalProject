@@ -1,0 +1,101 @@
+---
+title: "Assignment 6"
+author: "Shandra Morehouse"
+date: "12/1/2019"
+output: html_document
+---
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("ggvis")
+#install.packages("shiny")
+#install.packages("gapminder")
+#install.packages("tidytext")
+#install.packages("ggmap")
+#library(tidyverse)
+#library(ggvis)
+#library(shiny)
+#library(gapminder)
+#library(tidytext)
+#library(ggmap)
+#install.packages("gtrendsR")
+#library(gtrendsR)
+#install.packages("magrittr")
+#library(magrittr)
+#install.packages("tidyverse")
+#library(tidyverse)
+#install.packages("devtools")
+#devtools::install_github("PMassicotte/gtrendsR")
+```
+
+
+For this project, I am using Google Trends to visualize the popularity of various kpop groups over the last 10 years in the US. 
+
+```{r}
+res <- gtrends(c("BTS", "Girl's Generation", "2NE1", "EXO", "Super Junior"), time = "2009-01-01 2019-10-31", low_search_volume = T, geo = "US")
+plot(res)
+```
+
+```{r}
+str(res)
+```
+
+```{r}
+res$interest_over_time
+res$interest_by_region
+```
+
+```{r}
+interest_overTime <- as_tibble(res$interest_over_time)
+interest_byRegion <- as_tibble(res$interest_by_region)
+```
+
+
+```{r}
+ interest_timeRegion <- 
+  inner_join(interest_overTime, interest_byRegion, by = "geo")
+interest_timeRegion
+```
+
+```{r}
+
+interest_timeRegion  <-
+  interest_timeRegion %>%
+  separate(date, sep = "-", into = c("year", "month", "date"))
+interest_timeRegion
+```
+
+
+```{r}
+interest_timeRegion %>%
+  ggvis(x = ~hits.y,
+        y = ~location,
+        fill = ~keyword.y,
+        size := ~hits.y/1,
+        opacity := 2.5) %>%
+  filter(keyword.y %in% 
+         eval(input_checkboxgroup(
+         c("BTS", "Girls Generation", "2NE1", "EXO", "Super Junior"), 
+         selected = c("BTS", "Girls Generation", "2NE1", "EXO", "Super Junior"),
+         label = "Choose a Keyword"))) %>%
+   filter(location %in% 
+         eval(input_select(
+         c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"), 
+        selected = c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"),
+        multiple = TRUE, 
+        label = "Choose a State"))) %>%
+  filter(year %in% 
+           eval(input_slider(min = 2009, max = 2019, value = 2019, 
+              step = 1, animate = T, 
+            label = "Year", sep = ""))) %>%
+  add_tooltip(function(data){paste0(
+    "state: ", data$location, "<br>",
+    "hits: ", data$hits.y, "<br>",
+    "year: ", data$year, "<br>",
+    "keyword: ", data$keyword.y) }) %>%
+  layer_points(stroke := "white") %>%
+  layer_points(fill := ~year, 
+               opacity = 0) %>%
+   add_axis("x", title_offset = 40, title = "Hits", properties = axis_props(title = list(fontSize = 15))) %>%
+  add_axis("y", title_offset = 100, title = "State", properties = axis_props(title = list(fontSize = 15)))
+
