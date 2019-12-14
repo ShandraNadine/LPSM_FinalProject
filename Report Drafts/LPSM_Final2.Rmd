@@ -164,7 +164,7 @@ Below is a code for a histogram that counts the number of manumitted individuals
 ```{r}
 
 hist_YearCounty <- 
-  ManuClean %>%
+  ManuClean2 %>%
   filter(Year > 1700) %>%
 ggplot() +
   geom_histogram(mapping = aes(x = Year, fill = County), binwidth = 5)
@@ -178,7 +178,7 @@ Similarly, the graph below shows counts of manumitted individuals by the year, b
 ```{r}
 
 hist_YearSex <-
-ManuClean %>%
+ManuClean2 %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
@@ -193,7 +193,7 @@ We were also able to visualize this data by age of the individual. In the bar gr
 
 ```{r}
 bar_AgeSex <-
-ManuClean %>%
+ManuClean2 %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
@@ -209,7 +209,7 @@ After we created graphs that focused on the general overview of the counties we 
 By Age and Gender...
 ```{r}
 hist_AgeSexAA <-
-ManuClean %>%
+ManuClean2 %>%
   filter(County == "AA", Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
@@ -220,7 +220,7 @@ hist_AgeSexAA
 By Year and Gender...
 ```{r}
 hist_YearSexAA <-
-ManuClean %>%
+ManuClean2 %>%
   filter(County == "AA", Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
@@ -232,7 +232,7 @@ Since the goal of this project was to be able to pull out data and link it to in
 
 ```{r}
 hist_AgeSexHolsey <-
-ManuClean %>%
+ManuClean2 %>%
   filter(Year > 1700, Owner_LastName == "Holsey") %>%
   select(County, Year, Sex, Age, Owner_LastName) %>%
   ggplot() +
@@ -245,7 +245,7 @@ By year...
 
 ```{r}
 point_YearAgeHolsey <-
-ManuClean %>%
+ManuClean2 %>%
   filter(Year > 1700, Owner_LastName == "Holsey") %>%
   select(County, Year, Sex, Age, Owner_LastName) %>%
   ggplot() +
