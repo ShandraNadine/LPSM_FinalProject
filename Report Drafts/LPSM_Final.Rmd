@@ -61,8 +61,7 @@ Thus we began by extracting and modifying the classes of fields that were most l
 
 
 ```{r,include = FALSE}
-
-data<-Manumissions_Original
+data <- read.csv(Manumissions_Original)
 basic <- data%>%
 select(DataItem, Age, County, Date, DateManumitted, DateRecorded, DateRecorded2, Owner_LastName, Owner_FirstName, Owner_MiddleName, Slave_LastName, Slave_FirstName, Slave_MiddleName, Alias,Sex, Employment)
 str (basic)
@@ -130,7 +129,7 @@ ManuClean2<- basic
 Certificates of Freedom (CoF), as government-sanctioned documents with somewhat standardized formats and fields across jurisdictions (county), were easier to prepare for analysis.  The information found in CoFs were designated by a law passed in the Maryland General Assembly in 1805 (Chapter 66, Laws of 1805).  Fields in the CoF dataset thus are mostly standard across counties.  Our data cleaning for CoF data was minimal, consisting primarily of extracting key fields that were relevant to potential matching with the manumissions data.
 
 ```{r, include = FALSE}
-cofdata <- read.csv(choose.files())#select COF_Original
+cofdata <- read.csv(COF_Original)#select COF_Original
 cofbasic <- cofdata%>%
 select(DataItem, Age, County, Date, Owner_LastName, Owner_FirstName, Freed_LastName,
 Freed_FirstName, Alias, Sex, PriorStatus, Height)
