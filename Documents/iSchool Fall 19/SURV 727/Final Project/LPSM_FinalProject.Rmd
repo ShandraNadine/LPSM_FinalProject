@@ -35,106 +35,208 @@ ManuClean$Owner_LastName
  
  Comments: We should explain why there are dates past 1865. Also is the date the date the manumission was valid? 
 
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+```
 
 ```{r}
+bar_YearCounty <-
 ManuClean %>%
   filter(Year > 1700) %>%
 ggplot() +
   geom_bar(mapping = aes(x = Year, fill = County))
+
+bar_YearCounty
 ```
 
 
 ```{r}
+bar_FacetYearCounty <-
 ggplot(ManuClean) +
   geom_bar(mapping = aes(x = Year, fill = Sex)) +
   facet_wrap(~ County, scale = "free", ncol = 4)
+
+bar_FacetYearCounty
 ```
 
 ```{r}
-ManuClean %>%
+hist_YearCounty <- 
+  ManuClean %>%
   filter(Year > 1700) %>%
 ggplot() +
   geom_histogram(mapping = aes(x = Year, fill = County), binwidth = 5)
-  
+hist_YearCounty 
+
+ggsave("hist_YearCounty.png")
 ```
 ```{r}
+hist_YearSexAA <-
 ManuClean %>%
   filter(County == "AA", Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_histogram(mapping = aes(x = Year, fill = Sex), binwidth = 5)
+hist_YearSexAA
+
+ggsave("hist_YearSexAA.png")
+```
+```{r}
+
+hist_AgeSexAA <-
+ManuClean %>%
+  filter(County == "AA", Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Age, fill = Sex), binwidth = 5)
+hist_AgeSexAA
+
+ggsave("hist_AgeSexAA.png")
 ```
 
+
+
+
+
+
 ```{r}
+hist_YearSex <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_histogram(mapping = aes(x = Year, fill = Sex), binwidth = 5)
+
+hist_YearSex
+ggsave("hist_YearSex.png")
 ```
 
+
 ```{r}
-ManuClean %>%
-  filter(Year > 1700) %>%
-  select(County, Year, Sex, Age) %>%
-  ggplot() +
-  geom_histogram(mapping = aes(x = Year, fill = County), binwidth = 5)
+
 ```
 ```{r}
+point_AgeCounty <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_point(mapping = aes(x = Year, y = County))
+point_AgeCounty
 ```
 
 ```{r}
+point_AgeYear <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_point(mapping = aes(x = Year, y = Age))
+point_AgeYear
+
+ggsave("point_AgeYear.png")
 ```
 
 ```{r}
+point_AgeSex <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_point(mapping = aes(x = Age, y = Sex))
+point_AgeSex
+ggsave("point_AgeSex.png")
 ```
 
 ```{r}
+tile_YearCounty <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_tile(mapping = aes(x = Year, y = County, fill = Age), binwidth = 5) +
    scale_fill_distiller(palette = "YlGnBu")
+tile_YearCounty
 ```
 
 ```{r}
+hist_AgeSexHolsey <-
 ManuClean %>%
   filter(Year > 1700, Owner_LastName == "Holsey") %>%
   select(County, Year, Sex, Age, Owner_LastName) %>%
   ggplot() +
   geom_histogram(mapping = aes(x = Age, fill = Sex), binwidth = 5) 
-  
+hist_AgeSexHolsey
+
+ggsave("hist_AgeSexHolsey.png")
 ```
 
+
+
 ```{r}
+point_YearAgeHolsey <-
+ManuClean %>%
+  filter(Year > 1700, Owner_LastName == "Holsey") %>%
+  select(County, Year, Sex, Age, Owner_LastName) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = Age, y = Year, fill = Sex), binwidth = 5) 
+point_YearAgeHolsey
+
+ggsave("point_YearAgeHolsey.png")
+```
+
+
+
+
+
+
+```{r}
+bar_AgeCounty <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_bar(mapping = aes(x = Age, fill = County), binwidth = 5) 
+bar_AgeCounty
+
+ggsave("bar_AgeCounty.png")
    
 ```
 ```{r}
+bar_AgeSex <-
 ManuClean %>%
   filter(Year > 1700) %>%
   select(County, Year, Sex, Age) %>%
   ggplot() +
   geom_bar(mapping = aes(x = Age, fill = Sex), binwidth = 5) 
+bar_AgeSex
+
+ggsave("bar_AgeSex.png")
+```
+
+```{r}
+install.packages("usmap")
+library(usmap)
+```
+```{r}
+usmap::plot_usmap("counties", fill = "blue", alpha = 0.25,
+                  include = c("MD"))
+```
+
+
+
+
+```{r}
+str(usmap::us_map(regions = "counties"))
+```
+
+```{r}
+
+citation("ggplot2")
+
+
+```
+```{r}
+citation("tidyverse")
 ```
 
