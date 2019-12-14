@@ -1,0 +1,378 @@
+---
+title: "Legacy of Slavery"
+subtitle: "Exploring Data from the Maryland State Archives"
+author: "Lori Perine and Shandra Morehouse"
+date: "2019-12-13"
+output:
+  pdf_document:
+    toc: yes
+    df_print: kable
+
+---
+
+
+```{r, include = FALSE}
+library(knitr)
+library(tidyverse)
+library(ggplot2)
+```
+
+## Introduction
+
+The purpose of this project is to apply innovative uses of technology to archival data, with the objective of developing new knowledge and perspectives into the untold stories of individuals and events contained in archival records. The project will ultimately contribute to the development of computational grammars and associated information technology tools and methods for accessing, exploring, networking, and visualizing archival collections.  
+
+The specific data that we use for this project comes from the slavery collections housed at the Maryland State Archives (MSA).  The MSA have partnered with the Digital Curation and Innovation Lab (DCIC) in UMD’s iSchool in a program called “The Legacy of Slavery”.  The program seeks to “preserve and promote the vast universe of experiences that have shaped the lives of Maryland’s African American population.” (Legacy of Slaver). Towards this goal, the DCIC is applying innovative tools of data analysis and visualization to better understand the lives of enslaved and freed African American Marylanders, especially during the pre-Civil War era. 
+
+In this project, we make use of two data sets from the MSA collections, and use tools to characterize and visualize the emancipation of enslaved African Americans in Maryland between 1790 and 1865. The two data sets used in this project are the Manumissions records and the Certificates of Freedom records.  A manumission document is the legal document freeing a slave (Vol 825). Manumissions can be found in land, probate, and chattel records. These records typically contain information like name and residence of the slave owner, name and age of the slave, and the date the slave is to be freed. In some cases, the date a slave was to be freed is different than the date the manumission document was recorded.  
+
+A Certificate of Freedom is a legal document that was issued to African Americans who were required to record proof of their freedom in the county court. The court would then issue them a certificate of freedom (Vol 821). If the person had been previously manumitted by an act of the slaveholder, the court clerk or register of wills would look up the manumitting document before issuing a certificate of freedom. In addition to their name and the previous owner name (if applicable), certificates of freedom included how they became free and physical characteristics to identify the person, such as height, eye color, and complexion (Vol 821).
+
+With these two data sets in our sights, we set out to answer the following research questions: 
+1. What kind of structured data can we collect about from the Manumissions data set? From the Certificates of Freedom data set?
+  a. How does the data in the other data set compare? 
+2. Are there identifiers we can use to match people in the two data sets?  
+3. How do we harmonize non-standard transcriptions and transcription errors within and across data sets?
+4. Are we able to correctly match people from the two data sets in order to expand the narrative? Can we relate these people to other archival records in the Maryland State Archives?
+
+
+## Data Access
+
+The data for this project comes from digitized records of multiple archival collections held by the MSA which are related to slavery in the state of Maryland (Archives).  Records related to slavery are found in multiple, often unrelated, historical resources:  probate records, chattel records, court records, commission records, and personal records. The individual resources have been partially digitized, mostly by volunteers, primarily into separate, unconnected SQL databases that are referenced by the series characterizing the original source of the record. 
+
+Under the Legacy of Slavery project, the MSA has undertaken over the past decade to bring together related series into the Beneath the Underground database. This database has entries that reference over 400,000 unique individuals, white and black, owners, enslaved and free, for years spanning the late 18th century through the 1880 US Census.  Some of the record series are searchable online as full collections via the database link on the project’s webpages.
+
+We employed two strategies for gaining access to the data series on manumissions and certificates of freedom contained in the Beneath the Underground database.  
+
+First, working through the DCIC partnership with MSA, we sought permission for direct  web access or access to a mirrored version of the underlying SQL database, for querying in the context of this project. Because the MSA is a state government agency, bound legally by regulations concerning data access and security, we were not able to obtain permissions during the timeframe of this project.
+
+Our second strategy was to use tools learned and demonstrated for this course, specifically the rvest package and associated tools, to directly scrape the elements of the database that are searchable on the web.  Again, because of the restrictions and security associated with these government based websites, we were not successful in gaining access.  We found no permissions for robots and encountered 403 Forbidden errors when attempting to read and querying the urls related to the sites for online search of the MSA databases.
+
+We therefore turned to a third strategy:  using partial datasets that had been scraped in collaboration with DCIC colleagues.  This data was scraped using Python and a series of techniques documented in an unpublished Jupiter notebook, which is available on our git repository. The scraped data was then subsetted based on collections: manumissions, certificate of freedom, runaway slave ads, and other series.
+
+Our data is drawn from the manumissions and certificates of freedom data, saved as .csv files and labeled Original_Manumissions and COF_Original respectively on the project git repository.
+
+
+## Data Cleaning
+The manumissions data was the primary focus of analysis, as manumissions were a key prerequisite event for an enslaved person to receive a CoF. Manumissions records also allow us to track the devolution of the enslavement system in Maryland. CoF issued to  both to African Americans who had been manumitted within the state and those who had been born free within the state or relocated as freed men. Thus manumissions are better suited to characterizing trends in emancipation during the early 19th century.
+
+Our primary challenge with the manumissions data arose from  its lack of standardization.  The original records come from many resources and with inconsistent information captured in those records.  As the information has been transcribed, it has been made to fit into database fields that sometimes seem redundant, and other times are incomplete.  
+
+Thus we began by extracting and modifying the classes of fields that were most likely to be common to other records, as well as those which might provide key information of interest for identifying both the individuals involved in the manumissions event (such as names of the owner and enslaved persons, age, sex) and the key attributes of the event itself (county, date). 
+
+
+```{r,include = FALSE}
+
+data<-Manumissions_Original
+basic <- data%>%
+select(DataItem, Age, County, Date, DateManumitted, DateRecorded, DateRecorded2, Owner_LastName, Owner_FirstName, Owner_MiddleName, Slave_LastName, Slave_FirstName, Slave_MiddleName, Alias,Sex, Employment)
+str (basic)
+basic$DataItem<- as.numeric(basic$DataItem)
+basic <- basic %>% replace(.=="NULL", NA) # replace with NA
+str (basic)
+basic$Age <- as.numeric(basic$Age)
+```
+
+We then sought to standardize information that appeared erroneous, redundant, or unstandardized.  For example, a summary of the Age field yielded a maximum value that clearly was older than a human possibly could be.  So we looked for the outlier, which was most likely a transcription error, and changed the Age to NA. 
+
+```{r, include = FALSE}
+summary (basic$Age)
+which (basic$Age > 99)
+which (basic$Age >90)
+which (basic$Age >85)
+which (basic$Age >80)
+max (basic$Age[basic$Age< 99])
+max (basic$Age)
+max(basic$Age, na.rm = TRUE)
+max(basic$Age[basic$Age != 237], na.rm = TRUE)
+#The maximum age value 237 appears to be a mistake.  Replace it with NA.
+basic$Age[710] <- NA
+
+```
+
+The most challenging item concerned the multiple date fields.  The formats were not standardized, even within fields.  We also had to determine which date to choose for further analysis.  We learned that often two dates were found in records, as a deed of manumission would be formally recorded on one date, while the actual act of manumission would be delayed to a later date.  Also, there were differences in when a private document may have been signed, versus when it was formally recognized by a legal entity, such as a court or register of wills.  We decided to take the earliest date on the record as the key identifying year for the manumissions event. Therefore, we created a function to extract the year as characters from each date field, then compared the years to find the earliest date.  That then became the year used for analysis.
+
+```{r, include = FALSE}
+basic$Date <- trimws(basic$Date)
+basic$DateManumitted <- trimws(basic$DateManumitted)
+basic$DateRecorded <- trimws(basic$DateRecorded)
+basic$DateRecorded2 <- trimws(basic$DateRecorded2)
+basic$Date <- trimws(basic$Date)
+#Create the function extractyr
+extractyr <- function(x){
+  ifelse(
+      substr(x, nchar(x)-2, nchar(x)-2)==7|substr(x, nchar(x)-2, nchar(x)-2)== 8,
+      substr (x, nchar(x)-3, nchar(x)),
+           ifelse(
+            substr(x,2,2) ==7 | substr(x,2,2) ==8, substr(x, 1, 4),
+             NA))
+}
+#
+#Now apply this to the Date columns to create new variables in the dataset basic
+x <- basic$Date
+basic$Year1 <- extractyr(x)
+x <- basic$DateManumitted
+basic$Year2 <- extractyr(x)
+x<- basic$DateRecorded
+basic$Year3 <- extractyr(x)
+x <- basic$DateRecorded2
+basic$Year4 <- extractyr(x)
+#Now create new Year variable that is the earliest of the values for the years
+#Year columns are in 17 to 20
+basic$Year <- apply (basic[, 17:20], 1, min, na.rm = TRUE)
+#Change the Year columns from charactor to numeric
+basic[, 17:21]%<>% mutate_if(is.character, as.numeric)
+#Save with new name for transfer
+ManuClean2<- basic
+#ManuClean2 includes the Slave_FirstName field, which was accidentally excluded from 
+#ManuClean file used in our visualizations.
+```
+
+Certificates of Freedom (CoF), as government-sanctioned documents with somewhat standardized formats and fields across jurisdictions (county), were easier to prepare for analysis.  The information found in CoFs were designated by a law passed in the Maryland General Assembly in 1805 (Chapter 66, Laws of 1805).  Fields in the CoF dataset thus are mostly standard across counties.  Our data cleaning for CoF data was minimal, consisting primarily of extracting key fields that were relevant to potential matching with the manumissions data.
+
+```{r, include = FALSE}
+cofdata <- read.csv(choose.files())#select COF_Original
+cofbasic <- cofdata%>%
+select(DataItem, Age, County, Date, Owner_LastName, Owner_FirstName, Freed_LastName,
+Freed_FirstName, Alias, Sex, PriorStatus, Height)
+cofbasic$DataItemC <- as.numeric (cofbasic$DataItem)
+cofbasic$cofyear <- extractyr(cofbasic$Date)
+cofbasic$cofyear <- as.numeric (cofbasic$cofyear)
+cofbasic %<>%
+mutate(cofAge = Age)%>%
+cofAge<- as.numeric (cofAge)%>%
+mutate (cofDate = Date) %>%
+cofDate <- as.Date.numeric(cofDate)
+cofbasic <- cofbasic %>% replace(.=="NULL", NA) # replace with NA
+str (cofbasic)
+cofbasic$Age <- as.numeric (cofbasic$Age)
+cofbasic$County <- as.factor (cofbasic$County)
+cofbasic$Sex <- as.factor (cofbasic$Sex)
+cofbasic$PriorStatus <- as.factor(cofbasic$PriorStatus)
+
+```
+
+## Results
+
+###Visualizing Manumissions 
+
+
+The completed visualization for this project come only from the Manumissions documents. To visualize the data we collected, we used the ggplot2 R package. We focused on fields that would give us a rich overview of the data we had collected. These fields included Year, Age, Sex, and County. 
+
+Our main visualizations were in the form of histograms and bar plots. By using the tidyverse package (of which ggplot2 is a part of), we used the piping technique to create our visualizations. Because of inconsistencies in the data, usually because of incorrectly entered data (some entries were for the years in the 800s, not 1800s), it was necessary to filter the data so that the year was greater than 1700. In addition, each final graph was entered as an object so that it would be easy to identify later on. 
+
+Below is a code for a histogram that counts the number of manumitted individuals over the years and also shows the numbers based on county. The bulk of these documents were created during our target years of 1790 and 1865. The most documents are from Anne Arundel and Queen Anne’s counties. 
+
+```{r}
+
+hist_YearCounty <- 
+  ManuClean %>%
+  filter(Year > 1700) %>%
+ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = County), binwidth = 5)
+hist_YearCounty 
+
+#ggsave("hist_YearCounty.png")
+```
+
+Similarly, the graph below shows counts of manumitted individuals by the year, but this time, we also show the gender of the individuals. A majority of the manumitted slaves seem to be female, but it is interesting to note that there are several entries that do not have a gender completed. 
+
+```{r}
+
+hist_YearSex <-
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = Sex), binwidth = 5)
+
+hist_YearSex
+#ggsave("hist_YearSex.png")
+
+```
+
+We were also able to visualize this data by age of the individual. In the bar graph below, we show counts of manumitted individuals by their age and gender. Most individuals that were manumitted were under 18, with the highest number of manumissions for those under 10. There is a significant drop off of manumissions for individuals over the age of 40. In addition, there are generally more females manumitted than males. 
+
+```{r}
+bar_AgeSex <-
+ManuClean %>%
+  filter(Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = Age, fill = Sex), binwidth = 5) 
+bar_AgeSex
+
+#ggsave("bar_AgeSex.png")
+
+```
+
+After we created graphs that focused on the general overview of the counties we had data for, we focused on one county, Anne Arundel. We chose this county because it was one of the two counties that had the most records available (Anne Arundel had 3,380 while Queen Anne’s county had 3,017 records). By focusing on one county we are able to get an even closer look at the state of emancipation in Maryland during our selected time period. In these examples we see counts by age and gender and counts by year and gender. 
+
+By Age and Gender...
+```{r}
+hist_AgeSexAA <-
+ManuClean %>%
+  filter(County == "AA", Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Age, fill = Sex), binwidth = 5)
+hist_AgeSexAA
+
+```
+By Year and Gender...
+```{r}
+hist_YearSexAA <-
+ManuClean %>%
+  filter(County == "AA", Year > 1700) %>%
+  select(County, Year, Sex, Age) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Year, fill = Sex), binwidth = 5)
+hist_YearSexAA
+```
+
+Since the goal of this project was to be able to pull out data and link it to individuals, we decided to create graphs based on owner last name to see what kind of information we could visualize. For this example, we randomly chose the last name Holsey from Montgomery County. Through these visualizations, we were able to see how many slaves Holsey manumitted, the age and gender of these manumitted slaves, and also the year in which they were manumitted. 
+
+```{r}
+hist_AgeSexHolsey <-
+ManuClean %>%
+  filter(Year > 1700, Owner_LastName == "Holsey") %>%
+  select(County, Year, Sex, Age, Owner_LastName) %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = Age, fill = Sex), binwidth = 5) 
+hist_AgeSexHolsey
+
+```
+
+By year...
+
+```{r}
+point_YearAgeHolsey <-
+ManuClean %>%
+  filter(Year > 1700, Owner_LastName == "Holsey") %>%
+  select(County, Year, Sex, Age, Owner_LastName) %>%
+  ggplot() +
+  geom_point(mapping = aes(x = Age, y = Year, fill = Sex), binwidth = 5) 
+point_YearAgeHolsey
+```
+
+### Matching Records in the Data Sets
+
+To explore our question of matching records in datasets, we sought a basic process to identify the same person within each set.  Although the original records were centered on the owners, the same owner could have manumissions records for multiple enslaved people.  Therefore, the matching had to be based on the enslaved person.  There were structural difficulties in centering on the enslaved person, as names were incomplete due to the custom of not giving last names to enslaved people.  Also, at times an enslaved person would take on a new last name upon emancipation. Therefore, in order to match the record centered on the enslaved person, we first had to match owners names (as more consistent and standardized), then subset for matches by first name only for the person who had been enslaved and was now free.  
+
+We tested this using subsets of each dataset for Anne Arundel County only.  Anne Arundel was chosen because there were many records in both datasets from the county, and because as the county with the state government,  there was more abundant information available in the manumissions records. 
+
+We were able to find 77 highly likely matches among the Anne Arundel County records.  This process could be expanded to the entire data set. 
+
+
+```{r, include = FALSE}
+AAmanu <- ManuClean2 %>%
+subset(County == "AA")
+AAcof <- cofbasic %>%
+subset(County == "AA")
+dim (AAcof)
+head (AAcof)
+colnames(AAcof)[colnames(AAcof)=="DataItem"] <- "cofDataItem"
+colnames(AAcof)[colnames(AAcof)=="Age"] <- "cofAge"
+colnames(AAcof)[colnames(AAcof)=="Date"] <- "cofDate"
+red_AAmanu <- AAmanu %>%
+select(Owner_LastName, Owner_FirstName, Slave_LastName, Slave_FirstName)
+red_AAcof <- AAcof %>%
+select(Owner_LastName, Owner_FirstName, Freed_LastName, Freed_FirstName)
+head (red_AAmanu)
+head (red_AAcof)
+test <- red_AAcof %>%
+inner_join(red_AAmanu, by = c("Owner_LastName", "Owner_FirstName"))
+view (test)
+test2 < - test %>%
+select ("Freed_FirstName" = "Slave_FirstName", rm.na=TRUE)
+test2 <- test[test$Freed_FirstName==test$Slave_FirstName, ]
+view (test2)
+ManuCof <- test2[1:77, ]
+
+```
+
+## Discussion
+
+Our analysis and visualization showed promising preliminary results for extracting new insights into patterns of manumissions, as well as the possibilities of connecting across databases to begin linking events and documents relevant to the individuals within the Legacy of Slavery databases.   
+
+We were able to connect trends identified in the visualization with key historical events (laws impacting manumissions, the movement to send emancipated individuals to Africa, tightening of laws following slave rebellions).  We also made progress towards characterizing age and gender of the enslaved people whose emancipation is recorded in manumissions documents.  
+
+Ideally we would have liked to mapped and/or made some of these visualizations more interactive.  However, we chose to focus on completion of the match between datasets, which was at the core of our research questions.
+
+Relevant to those original research questions, we learned the following:
+
+### What kind of structured data can we collect about from the Manumissions data set? From the Certificates of Freedom data set?  How does the data in the other data set compare? 
+
+Although one dataset (manumissions) came from highly unstructured original sources, we were able to find or construct key fields to be used for matching. This was tested on data from Anne Arundel county, where records were more likely to record full names of the enslaved and provide several dates for verification.
+
+Nevertheless, certain cultural and legal norms during the early 1800s could limit what we might be able to do across the entire dataset.  Names of enslaved individuals are not complete and may be changed once they are freed. Recordkeeping varied from county to county, and information is not fully captured by manumissions records.
+
+We also have a dataset that is limited to 10 of the 24 Maryland counties, thus limiting the portrait that we can draw of life and practices across the state.
+
+
+### Are there identifiers we can use to match people in the two data sets?  
+
+The two main individuals referenced in both manumission and CoF records are the owner and the (formerly) enslaved person.  It is on the basis of these identifiers that we can look for matches.  Due to duplication of common names, we chose to subset first by jurisdiction (county), then look for dual matches of owner and (formerly) enslaved.  We note that although Age and Year could potentially be used to establish verification that these are the same people, we cannot use them as matching identifiers, as the manumissions event and the CoF event don’t necessarily occur in the same year.
+
+Using this method, we encounter many of the same limitations based on deficiencies caused by pre-Civil War legal and cultural customs in naming enslaved people.  We further note that once emancipated, freed black persons may move within the state.  Thus, by filtering first by jurisdiction (county) we may be missing other matches.
+
+### How do we harmonize non-standard transcriptions and transcription errors within and across data sets?
+
+We found that it was possible to get a clean enough data set to make some initial matches. Thus, we could address non-standard transcriptions of things like dates.  We could use similar techniques to address non-standard transcriptions within fields like “Prior Status”, also.  We did not pursue that standardization in this project, however, as it wasn’t central to our ability to make the initial match.  Nevertheless, cleaning up “Prior Status” could give us another potential verifier, along with Sex, Age, and Year.
+
+Transcription errors affecting character strings such as names were not addressed in this analysis.  This limits our ability to look for potential matches based on variations in the spelling of names, or based on potential misspellings.
+
+### Are we able to correctly match people from the two data sets in order to expand the narrative? Can we relate these people to other archival records in the Maryland State Archives?
+
+The basic answer is yes.  We’ve demonstrated that it is possible to locate records in each dataset that have a high potential of referencing the same owner and (formerl) enslaved person.  
+
+Time did not permit us to pursue verification using other identifiers (Sex, Age, Prior Status, Year).   Thus we haven’t demonstrated the ability to expand beyond this basic matching, or to apply some sort of probability distribution to the validity of the matches.
+
+We have demonstrated, nevertheless, the potential for using events in archival records to surface previously decoupled information about individuals, and link them through archival records to other key persons. 
+
+## References
+
+Archives of Maryland Online. (n.d.). Retrieved December 13, 2019, from http://aomol.msa.maryland.gov/html/commission.html
+
+Legacy of Slavery in Maryland. (n.d.). Retrieved December 13, 2019, from http://slavery.msa.maryland.gov/
+Volume 821 Index -. (n.d.). Retrieved December 13, 2019, from http://aomol.msa.maryland.gov/megafile/msa/speccol/sc2900/sc2908/000001/000821/html/index.html
+
+Legacy of Slavery in Maryland Project – University of Maryland College Park, iSchool. (n.d.). Retrieved December 13, 2019, from https://dcicblog.umd.edu/legacyofslaveryinmaryland/
+
+Volume 825 Index—Anne Arundel County Court, Manumission Record, 1797-1807. (n.d.). Retrieved December 13, 2019, from http://aomol.msa.maryland.gov/megafile/msa/speccol/sc2900/sc2908/000001/000825/html/index.html
+
+Wickham, H. (2016) ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York.
+
+Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686 
+
+
+## Appendix
+
+Timeline of Slavery in Maryland
+
+1642- The first cargo ship with 13 Africans arrives in St. Mary's City.  The legal status of indentured servants and slaves in Maryland remains in contention.   
+
+1664- Maryland legalizes slavery.
+
+1775- The Revolutionary War begins.
+
+1783- Maryland prohibits the importation of slaves. 
+
+1783- The Maryland Gazette published "Vox Africanorum", an editorial denouncing the inequality in the newly formed America, which promoted liberty and freedom while enslaving thousands.
+
+1796- The Maryland General Assembly liberalizes the state's manumission laws regarding how and when a slave owner can free his/her slaves.
+
+1831- The Maryland Colonizational Society forms to colonize Maryland blacks in Africa.
+
+1832- In response to the Nat Turner Revolt, Maryland's legislature prohibits free blacks from entering the state.
+
+1857- The U.S. Supreme Court hands down the Dred Scott decision, which denied African Americans equal rights as citizens. 1860- The Maryland General Assembly outlaws manumission by deed or will.
+
+1861- The Civil War begins. 
+
+1862- Slavery is abolished in District of Columbia.
+
+1863- Lincoln issues the Emancipation Proclamation, which frees all slaves in the territories currently in rebellion.
+
+1864- On November 1, slavery is abolished in Maryland.
+
+1865- Slavery is abolished in all of the states by the 13th Amendment.
